@@ -223,7 +223,7 @@ class Button: View {
 | 중첩 클래스<sup>nested class</sup> (바깥쪽 클래스에 대한 참조를 저장하지 않음) | static class A | class A
 | 내부 클래스<sup>inner class</sup> (바깥쪽 클래스에 대한 참조를 저장함) | class A | inner class A
 
-- 코트린에서 바깥쪽 클래스의 인스턴스를 가리키려면 `this@Outer`라고 써야한다. (자바와는 다름)
+- 코틀린에서 바깥쪽 클래스의 인스턴스를 가리키려면 `this@Outer`라고 써야한다. (자바와는 다름)
 
 ```kotlin
 class Outer {
@@ -421,13 +421,16 @@ interface User {
 
 ```kotlin
 /* 인터페이스의 프로퍼티 구현하기 */
-interface PrivateUser(override val nickname: String) : User  /* <-- 주 생성자에 있는 프로퍼티 */
+/* 방법 1 */
+class PrivateUser(override val nickname: String) : User  /* <-- 주 생성자에 있는 프로퍼티 */
 
+/* 방법 2 */
 class SubscribingUser(val email: String) : User {
     override val nickname: String
         get() = email.substringBefore('@')  /* <-- 커스텀 Getter */
 }
 
+/* 방법 3 */
 class FacebookUser(val accountId: Int) : User {
     override val nickname = getFacebookName(accountId)  /* <-- 프로퍼티 초기화 식 */
 }
@@ -437,4 +440,223 @@ test@kotlinlang.org
 
 >>> println(SubscribingUser("test@kotlinglang.org").nickname)
 test
+```
+
+- PrivateUser는 주 생성자 안에 프로퍼티를 직접 선언하였다. 이 프로퍼티는 User의 추상 프로퍼티를 구현하고 있으므로 override를 표시해야 한다.
+- SubscribingUser는 커스텀 게터로 nickname 프로퍼티를 설정한다. 이 프로퍼티는 매번 이메일 주소에서 별명을 계산해 반환한다.
+- FackbookUser는 초기화 식으로 nickname 값을 초기화한다. getFackbookName은 다른 곳에서 정의 되어있다고 가정한다.
+- SubscribingUser와 FacebookUser의 nickname 구현의 차이에 주의한다. SubscribingUser는 매번 호출될 때마다 substringBefore()를 호출하여 계산하고 있는 반면, FacebookUser의 nickname은 객체 초기화 시점에 getFacebookName()의 반환 값을 nickname 필드에 저장하고 있다.
+ - 인터페이스에는 추상 프로퍼티 뿐만 아니라, Getter와 Setter가 있는 프로퍼티를 선언할 수 있다.
+ 
+ ```kotlin
+interface User {
+    val email: String
+    val nickname: String
+        get() = email.substringBefore('@')  /* 프로퍼티에 뒷받침하는 필드가 없다. 대신 매번 결과를 계산해 돌려준다. */
+}
+```
+
+- 위 인터페이스에는 추상 프로퍼티인 email과 커스텀 게터가 있는 nickname 프로퍼티가 있다.
+- 위 인터페이스를 구현할 때는 반드시 email를 오버라이드해야 한다. nickname은 오버라이드하지 않고 상속 받을 수 있다.
+- 인터페이스에 선언된 프로퍼티와 달리 클래스에 구현된 프로퍼티는 뒷받침하는 필드<sup>backing field</sup>를 원하는대로 사용할 수 있다.
+
+### 4.2.4 게터와 세터에서 뒷받침하는 필드에 접근
+
+- 프로퍼티의 2가지 유형에는 (1)값을 저장하는 프로퍼티와 (2)커스텀 접근자에서 매번 값을 계산하는 프로퍼티가 있다.
+- 코틀린에서는 이 2가지 유형을 조합하는 프로퍼티를 만들 수 있다. 이를 위해서는 접근자 안에서 뒷받침하는 필드<sup>backing field</sup>에 접근할 수 있어야 한다.
+
+```kotlin
+/* 세터에서 뒷받침하는 필드 접근하기 */
+class User(val name: String) {
+    var address: String = "unspecified"
+        set(value: String) {
+            println(""""
+                Address was changed for ${name}:
+                "${field}" -> "${value}".""".trimIndent())  /* 뒷받침하는 필드 값 읽기 */
+            field = value  /* 뒷받침하는 필드 값 변경하기 */
+        }
+}
+
+>>> val user = User("Alice")
+>>> user.address = "Elsenheimerstrasse 47, 80687 Muenchen"
+Address was changed for Alice:
+"unspecified" -> "Elsenheimerstrasse 47, 80687 Muenchen".
+```
+
+- 프로퍼티의 값을 바꿀 때는 user.address = "new value" 처럼 필드 설정 구문을 사용한다. 이는 내부적으로 address의 세터를 호출한다.
+- `field`라는 특별한 식별자를 통해 뒷받침하는 필드에 접근할 수 있다. 게터에서는 field 값을 읽기만 가능하고, 세터에서는 값을 읽거나 쓸 수 있다.
+- 변경 가능 프로퍼티의 게터와 세터 중 한쪽만 직접 정의해도 된다.
+
+### 4.2.5 접근자의 가시성<sup>visibility</sup> 변경
+
+- 접근자의 가시정은 기본적으로 프로퍼티와 동일하다.
+- get 이나 set 앞에 가시정 변경자를 추가해서 변경할 수 있다.
+
+```kotlin
+class LengthCounter {
+    var counter: Int = 0
+        private set  /* <-- 이 클래스 밖에서 이 프로퍼티의 값을 변경할 수 없다. */
+    fun addWord(word: String) {
+        counter += word.length
+    }
+}
+
+>>> val lengthCounter = LengthCounter()
+>>> lengthCounter.addWord("Hi!")
+>>> println(lengthCounter.counter)
+3
+```
+
+## 4.3 컴파일러가 생성한 메소드: 데이터 클래스와 클래스 위임
+
+- 자바 플랫폼에서는 클래스가 equals, hashCode, toString 등의 메소드를 구현해야 한다.
+- 코틀린에서는 이런 메소드 구현 작업을 보이지 않는 곳에서 자동으로 해준다.
+
+### 4.3.1 모든 클래스가 정의해야 하는 메소드
+
+- 코틀린 클래스도 자바와 마찬가지로 toString, equals, hashCode 등을 오버라이드 할 수 있다.
+
+```kotlin
+class Client(val name: String, val postalCode: Int)
+```
+
+#### 문자열 표현: toString()
+
+```kotlin
+/* Client에 toString() 구현하기 */
+
+class Client(val name: String, val postalCode: Int) {
+    override fun toString() = "Client(name=${name}, postalCode=${postalCode}"
+}
+
+>>> val client1 = Client("오현석", 4122)
+>>> println(client1)
+Client(name=오현석, postalCode=4122)
+```
+
+#### 객체의 동등성: equals()
+
+```kotlin
+>>> val client1 = Client("오현석", 4122)
+>>> val client2 = Client("오현석", 4122)
+>>> println(client1 == client2)
+false
+```
+
+- 위 에제에서는 두 객체가 동일하지 않다. 객체의 주소를 비교하기 때문이다. 두 객체의 값 비교를 위해서는 equals()를 오버라이드 해야 한다.
+
+```kotlin
+/* Client에 equals() 구현하기 */
+class Client(val name: String, val postalCode: Int) {
+    override fun equals(other: Any?) : Bollean {  /* Any는 자바의 Object에 대응하는 클래스다. Any?는 널이 될 수 있는 타입이므로 "other"는 null일 수 있다. */
+        if (other == null || other !is Cleint)
+            return false
+            
+        return name == other.name && postalCode == other.postalCode
+    }
+    
+    override fun toString() = "Client(name=${name}, postalCode=${postalCode}"
+}
+```
+
+- 위 코드는 이제 client1 == client2가 true를 반환하게 해준다. 하지만 Client 클래스로 더 복잡한 작업을 수행하면 제대로 작동하지 않는 경우가 있다. hashCode 정의를 빠뜨린 것이 원인이다.
+
+#### 해시 컨테이너: hashCode()
+
+- 자바에서는 equals를 오버라이드할 때 반드시 hashCode도 함께 오버라이드해야 한다.
+
+```kotlin
+>>> val processed = hashSetOf(Client("오현석", 41222))
+>>> println( processed.contains(Client("오현석", 412222)))
+false
+```
+
+- 위 예제에서 false가 나오는 이유는 hashCode를 정의하지 않았기 때문이다. HashSet은 원소를 비교할 때 빠른 비교를 위해 두 값의 해시 코드가 같은 경우에만 실제 값을 비교한다. 위 예제에서는 해시 코드가 다르므로 false가 반환된다.
+
+```kotlin
+/* Client에 hashCode 구현하기 */
+class Client(val name: String, val postalCode: Int) {
+    ...
+    override fun hashCode() : Int = name.hashCode() * 31 + postalCode
+}
+```
+
+- 코틀린에서는 위에서 재정의 했던 toString, equals, hashCode를 모두 자동으로 생성할 수 있다.
+
+### 4.3.2 데이터 클래스: 모든 클래스가 정의해야 하는 메소드 자동 생성
+
+- 코틀린은 `data` 키워드를 클래스 앞에 붙이면 필요한 메소드를 컴파일러가 자동으로 만들어 준다. `data` 변경자가 붙은 클래스를 `데이터 클래스`라고 부른다.
+
+```kotlin
+/* Client를 데이터 클래스로 선언하기 */
+
+data class Client(val name: String, val postalCode: Int)
+```
+
+- 위 예제의 클래스는, 앞서 우리가 재정의한, equals, hashCode, toString 이 자동으로 생성되었다.
+
+#### 데이터 클래스와 불변성: copy() 메소드
+
+- 데이터 클래스의 프로퍼티에 `var`를 사용할 수 있으나, 가능한 모든 프로퍼티를 `읽기 전용(val)`으로 만들어 데이터 클래스를 불변<sup>immutable</sup>클래스로 만들라고 권장한다.
+- 코틀린은 객체를 복사할 때 일부 프로퍼티를 바꿀 수 있게 해주는 `copy` 메소드를 제공한다.
+- Client의 copy를 직접 구현하면 아래와 같다.
+
+```kotlin
+class Client(val name: String, val postalCode: Int) {
+    ...
+    fun copy(name: String = this.name, postalCode = this.postalCode) = Client(name, postalCode)
+}
+
+>>> val lee = Client("이계영", 4122)
+>>> println(lee.copy(postalCode = 4000))
+Client(name=이계영, postalCode=4000)
+```
+
+### 4.3.3 클래스 위임: by 키워드 사용
+
+- 코틀린에서는 기본적으로 클래스를 final로 취급하여 open 변경자로 열어둔 클래스만 확장할 수 있게 해준다.
+- 상속을 허용하지 않는 클래스에 새로운 동작을 추가 해야하는 경우가 발생하며, 이럴 때 사용하는 일반적인 방법은 **데코레이터**<sup>Decorator</sup>패턴이다. 데코레이터 패턴의 단점은 준비 코드가 상당히 많다는 것이다. 아래 예를 보자.
+
+```kotlin
+class DelegatingCollection<T>: Collection<T> {
+    private val innerList = arrayListOf<T>()
+    override val size: Int get() = innerList.size
+    override fun isEmpty(): Boolean = innerList.isEmpty()
+    override fun contains(element: T): Boolean = innerList.contains(element)
+    override fun iterator(): Iterator<T> = innerList.iterator()
+    override fun containsAll(elements: Collection<T>): Boolean = innerList.containsAll(element)
+}
+```
+
+- 이러한 준비 코드를 코틀린에서는 일급 시민<sup>first-class</sup> 기능으로 지원한다. 인터페이스를 구현할 때 `by` 키워드를 통해 그 인터페이스에 대한 구현을 다른 캑체에 위임 중이라는 사실을 명시할 수 있다.
+
+```kotlin
+class DelegatingCollection<T>(
+    innerList: Collection<T> = ArrayList<T>()
+) : Collection<T> by innerList {}
+```
+
+- 클래스 안에 있던 모든 오버라이드 메소드가 없어졌다. 컴파일러가 해당 메소드를 자동으로 생성한다.
+- 이 기법을 이용해 원소를 추가한 횟수를 기록하는 컬렉션을 구현해보자.
+
+```kotlin
+class CountingSet<T>(
+    val innerSet: MutableCollection<T> = HashSet<T>()
+) : MutalbeCollection<T> by innerSet {
+    var objectsAdded = 0
+    override fun add(element: T) : Boolean {
+        objectsAdded++
+        return innerSet.add(element)
+    }
+    
+    override fun addAll(c: Collection<T>) : Boolean {
+        objectsAdded += c.size
+        return innerSet.addAll(c)
+    }
+}
+
+>>> val cest = CountingSet<Int>()
+>>> cset.addAll(listOf(1, 1, 2))
+>>> println("${cset.objectsAdded} objects were added, ${cset.size} remain")
+3 objects were added, 2 remain
 ```
