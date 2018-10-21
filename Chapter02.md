@@ -266,7 +266,7 @@ fun eval(e : Expr): Int =
         is Num -> e.value /* is에 의해  e가 자동으로 Num으로 캐스팅 된다 */
         is Sum -> eval(e.right) + eval(e.left)
         else -> throw IllegalArgumentException("Unknown expression")
-
+    }
 ```
 
 ## 2.4 대상을 이터레이션: while과 for 루프
