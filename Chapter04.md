@@ -1,6 +1,8 @@
 # Chapter 4. 클래스, 객체, 인터페이스
 
-> 스터디 날짜 : 2018-10-17(수)
+> **스터디 날짜**
+>> 2018-10-17(수)<br/>
+>> 2018-10-24(수)
 
 
 - 자바와 달리 인터페이스에 프로퍼티를 생성할 수 있다.
@@ -659,4 +661,79 @@ class CountingSet<T>(
 >>> cset.addAll(listOf(1, 1, 2))
 >>> println("${cset.objectsAdded} objects were added, ${cset.size} remain")
 3 objects were added, 2 remain
+```
+
+## 4.4 object 키워드: 클래스 선언과 인스턴스 생성
+
+- 코틀린에서 `object` 키워드는, 여러 상황에서 사용하지만, 클래스를 정의하면서 동시에 객체<sup>instance</sup>를 생성한다는 의미이다. 
+
+### 4.4.1 객체 선언: 싱글턴을 쉽게 만들기
+
+- 자바에서는 보통 클래스의 생성자를 private으로 제한하고 정적 필드에 유일한 객체를 저장하는 싱글턴 패턴<sup>singleton pattern</sup>을 통해 이를 구현한다.
+- 코틀린은 `객체 선언` 기능을 통해 싱글턴을 언어에서 기본 지원한다. 객체 선언은 클래스 선언과 그 클래스에 속한 **단일 인스턴스**의 선언을 합친 선언이다.
+
+```kotlin
+object Payroll {
+    val allEmployees = arrayListOf<Person>()
+    fun calculateSalary() {
+        for (person in allEmployees) {
+            ...
+        }
+    }
+}
+```
+
+- 객체 선언은 object 키워드로 시작한다.
+- 객체 선언 안에는 프로퍼티, 메소드, 초기화 블록 등이 들어갈 수 있다. 하지만 생성자는 객체 선언에 쓸 수 없다.
+- 싱글턴 객체는 객체 선언문이 있는 위치에서 생성자 호출 없이 즉시 만들어진다.
+- 변수와 마찬가지로 객체 선언에 사용한 이름 뒤에 마침표(.)를 붙여 메소드나 프로퍼티에 접근할 수 있다.
+
+```kotlin
+Payroll.allEmployees.add(Person(...))
+Payroll.calculateSalary()
+```
+
+- 객체 선언도 클래스나 인스턴스를 상속할 수 있다.
+- Comparator 인스턴스를 만드는 것은 객체 선언의 가장 좋은 예다.
+
+```kotlin
+/* 객체 선얼을 사용해 Comparator 구현하기 */
+object CaseInsensitiveFileComparator : Comparator<File> {
+    override fun compare(file1: File, file2: File) : Int {
+        return file1.path.compareTo(file2.path, ignoreCase = true)
+    }
+}
+
+>>> println(CaseInsensitiveFileComparator.compare(File("/User", File("/user"))))
+0
+```
+
+- 일반 객체(클래스 인스턴스)를 사용할 수 있는 곳에는 항상 싱글턴 객체를 사용할 수 있다. 
+
+```kotlin
+>>> val files = listOf(File("/Z"), File("/a"))
+>>> println(files.sortedWith(CaseInsensitiveFileComparator))
+[/a, /Z]
+```
+
+- 클래스 안에서도 객체를 선언할 수 있고, 여전히 인스턴스는 단 하나뿐이다.
+
+```kotlin
+/* 중첩 객체를 사용해 Comprator 구현하기 */
+data class Person(val name: String) {
+    object NameComparator : Comparator<Person> {
+        override fun compare(p1: Person, p2: Person): Int = p1.name.compareTo(p2.name)
+    }
+}
+
+>>> val persons = listOf(Person("Bob"), Persion("Alice"))
+>>> println(persons.sortedWith(Person.NameComparator))
+[Person(name=Alice), Person(name=Bob)]
+```
+
+- 코틀린의 객체 선언은 자바 클래스로 컴파일시 유일한 인스턴스에 대한 정적 필드가 있는 자바 클래스로 변경 된다. 이 때 인스턴스 필드의 이름은 항상 `INSTANCE` 이다.
+
+```java
+/* 자바 */
+CaseInsensitiveFileComparator.INSTANCE.compare(file1, file2);
 ```
