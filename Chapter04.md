@@ -737,3 +737,185 @@ data class Person(val name: String) {
 /* 자바 */
 CaseInsensitiveFileComparator.INSTANCE.compare(file1, file2);
 ```
+
+### 4.2.2 동반 객체: 팩토리 메소드와 적정 멤버가 들어갈 장소
+
+- 코틀린 클래스 안에는 정적인 멤버는 없다. 자바의 `static` 키워드를 **지원하지 않는다**.
+- `static`을 지원하지 않는 대신 패키지 수준의 최상위 함수와 객체 선언을 활용하며, 대부분의 경우 최상위 함수를 활용하는 것을 권장한다.
+- 최상위 함수는 클래스 내부의 private 멤버에 접근 불가능하기 때문에 클래스에 중첩된 객체 선언의 멤버 함수를 정의하여 사용한다.  
+- 클래스 안에 정의된 객체에 `companion`이라는 표시를 붙이면 클래스의 동반 객체<sup>companion object</sup>를 만들 수 있다.
+- 동반 객체의 프로퍼티나 메소드에 접근하려면 그 동반 객체가 정의된 클래스 이름을 사용한다. 이 때 객체의 이름은 따로 지정할 필요가 없다. 이 형태는 자바의 정적 메소드 호출이나 정적 필드 사용과 동일하다.
+
+```kotlin
+class A {
+    companion object {
+        fun bar() {
+            println("Companion object called")
+        }
+    }
+}
+
+>>> A.bar()
+Companion obejct called
+```
+
+- 동반 객체는 자신을 둘러싼 클래스의 모든 private 멤버에 접근할 수 있다. 또한 동반 객체는 바깥쪽 클래스의 private 생성자도 호출 할 수 있으며, 패토리 패턴을 구현하기 가장 적합하다.
+- 아래는 두 개의 클래스를 하나의 클래스로 합치면서 사용자 객체를 생성하는 예제이다.
+
+```kotlin
+/* User를 상속받는 2개의 클래스 구현하기 */
+class SubscribingUser(val email: String) : User {
+    override val nickname: String
+        get() = email.substringBefore('@')  /* <-- 커스텀 Getter */
+}
+
+class FacebookUser(val accountId: Int) : User {
+    override val nickname = getFacebookName(accountId)  /* <-- 프로퍼티 초기화 식 */
+}
+```
+
+```kotlin
+/* 2개의 클래스를 User 클래스 안으로 합치기 */
+class User {
+    val nickname: String
+    constructor(email: String) {  /* 부 생성자 */
+        nickname = email.substringBefore('@')
+    }
+    
+    constructor(facebookAccountId: Int) {  /* 부 생성자 */
+        nickname = getFacebookName(facebookAccountId)
+    }
+}
+```
+
+- 위 예제를 표현하는 더 유용한 방법은 클래스의 인스턴스를 생성하는 팩토리 메소드를 만드는 것이다. 아래 예제를 보자.
+
+```kotlin
+/* 부 생성자를 팩토리 메소드로 대신하기 */
+class User private constructor(val nickname: String) {  /* 주 생성자를 비공개로 만든다. */
+    companion object {
+        fun newSubscribingUser(email: String) = User(email.substringBefore('@'))
+        fun newFacebookUser(accountId: Int) = User(getFacebookName(accountId))
+    }
+}
+
+>>> val subscribingUser = User.newSubscribinUser("bob@gmail.com")
+>>> val facebookUser = User.newFacebookUser(4)
+>>> subscribingUSer.nickname
+bob
+```
+
+### 4.4.3 동반 객체를 일반 객체처럼 사용
+
+- 동반 객체는 클래스 안에 정의된 일반 객체다. 따라서 이름을 붙이거나, 인터페스를 상속하거나, 동반 객체 안에 확장 함수와 프로퍼티를 정의할 수 있다.
+
+```kotlin
+/* 동반 객체에 이름 붙이기 */
+class Person(val name: String) {
+    companion object Loader {  /* <-- 동반 객체에 이름을 붙인다. */
+        fun fromJSON(jsonText: String) : Person = ...
+    }
+}
+
+>>> person = Person.Loader.fromJSON("{name: 'Dmitry'}")\
+>>> person.name
+Dmitry
+>>> person2 = Person.fromJSON("{name: 'Brent'}")
+>>> person2.name
+Brent
+```
+- 동반 객체에 이름을 생략하는 경우 동반 객체의 이름은 자동을 `Companion`이 된다.
+
+#### 동반 객체에서 인터페이스 구현
+
+```kotlin
+/* 동반 객체에서 인터페이스 구현하기 */
+interface JSONFactory<T> {
+    fun fromJSON(jsonText: String) : T
+}
+
+class Person(val name: String) {
+    companion object : JSONFactory<Person> {
+        override fun fromJSON(jsonText: String) : Person = ... /* <-- 동반 객체가 인터페이스를 구현헌다. */
+    }
+}
+```
+
+- JSON으로부터 각 원소를 다시 만들어내는 추상 팩토리가 있다고 가정한다면, Person 객체를 그 팩토리에게 넘길 수 있다.
+
+```kotlin
+fun loadFromJSON<T>(factory: JSONFactory<T>): T {
+    ...
+}
+
+loadFromJSON(Person)  /* <-- 동반 객체의 인스턴스를 함수에 넘긴다. */
+```
+
+#### 동반 객체 확장
+
+```kotlin
+/* 동반 객체에 대한 확장 함수 정의하기 */
+
+// 비지니스 로직 모듈
+class Person(val firstName: String, val lastName: String) {
+    companion object {  /* <-- 비어있는 동반 객체 선언 */
+    
+    }
+}
+
+// 클라이언트/서버 통신 모듈
+fun Person.Companion.fromJSON(json: String) : Person {
+    ...
+}
+
+val p = Person.fromJSON(json)
+```
+
+- 위 예제는 마치 동반 객체 안에서 fromJSON 함수를 정의한 것처럼 fromJSON을 호출할 수 있으나, 실제로 fromJSON은 클래스 밖에서 정의한 함수이다.
+- 동반 객체에 대한 확장 함수를 작성하려면 원래 클래스에 동반 객체를 꼭 선언해야 한다.
+
+### 4.4.4 객체 식: 무명 내부 클래스를 다른 방식으로 작성
+
+- `object` 키워드는 **무명 객체**<sup>anonymous object</sup>를 정의할 때도 사용한다.
+
+```kotlin
+/* 무명 개체로 이벤트 리스너 구현하기 */
+
+window.addMouseListener (
+    object : MouseAdapter() {  /* <-- MouseAdapter를 확장하는 무명 객체를 선언 */
+        override fun mouseClicked(e: MouseEvent) {  /* <-- MouseAdapter의 메소드 오버라이드 */
+            // ...
+        }
+        
+        override fun mouseEntered(e: MouseEvent) {  /* <-- MouseAdapter의 메소드 오버라이드 */
+            // ...
+        }
+    }
+)
+```
+
+- 위 예제는 객체 선언에서와 동일하지만, 객체 이름이 빠져있다.
+- 객체에 이름을 붙여야 한다면 변수에 무명 객체를 대입하면 된다.
+
+```kotlin
+val listener = object : MouseAdapter {
+    override fun mouseClicked(e: MouserEvent) { ... }
+    override fun mouseEntered(e: MouserEvent) { ... }
+}
+```
+
+- 하나의 인터페이스만 구현하거나 하나의 클래스만 확장할 수 있는 자바의 무명 내부 클래스와 다르게, 코틀린은 여러 인터페이스를 구현하거나, 클래스를 확장하면서 인터페이스를 구현할 수 있다.
+- 객체 선언과 달리 무명 객체는 싱글턴이 아니다. 객체 식이 쓰일 때마다 새로운 인스턴스가 생성된다.
+- 무명 클래스는 자신이 포함된 함수의 변수에 접근할 수 있으며, 자바와 다르게 final이 아닌 변수도 객체 식 안에서 사용할 수 있다. 또한 그 값을 변경할 수도 있다.
+
+```kotlin
+fun countClicks(window: Window) {
+    var clickCount = 0  /* <-- 로컬 변수 정의 */
+    window.addMouseListener(object: MouseAdaptoer() {
+        override fun mouseClicked(e: MouseEvent) {
+            clickCount++  /* <-- 로컬 변수의 값을 변경한다. */
+        }
+    })
+    // ...
+}
+```
