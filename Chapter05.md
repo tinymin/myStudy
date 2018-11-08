@@ -1,8 +1,7 @@
 # Chapter 5. 람다로 프로그래밍
 
 > **스터디 날짜**
->> 2018-10-24(수)<br/>
->> 2018-10-31(수)
+>> 2018-10-24(수)<br/>2018-10-31(수)<br/>2018-11-07(수)
 
 - **람다식**<sup>lambda expression</sup> 또는 **람다**는 다른 함수에 넘길 수 있는 작은 코드 조각을 뜻한다.
 
@@ -529,3 +528,128 @@ postponeComputation(1000, object : Runnable {
 ```
 
 - 람다와 익명 객체는 차이가 있다. 익명 객체를 명시적으로 선언하는 경우 메소드를 호출할 때마다 새로운 익명 객체가 생성된다. 람다를 사용하면 컴파일러에 의해 자동 생성된 익명 객체가 단 하나 만들어지고, 해당 익명 객체를 재상용한다. 
+
+### 5.4.2 SAM 생성자: 람다를 함수형 인터페이스로 명시적으로 변경
+
+- SAM 생성자는 `람다`를 `함수형 인터페이스의 인스턴스`로 변환할 수 있게 컴파일러가 자동으로 생성한 함수이다. 만약 컴파일러가 자동으로 `함수형 인터페이스 무명 클래스`로 바꾸지 못 하는 경우 SAM 생성자를 사용할 수 있다.
+
+```kotlin
+/* SAM 생성자를 사용하 값 반환하기 */
+fun createAllDoneRunnable() : Runnbale {
+    return Runnable { println("All Done") }
+}
+
+>>> createAllDoneRunnable().run()
+All Done!
+```
+
+- SAM 생성자의 이름은 사용하려는 함수형 인터페이스의 일므과 같다.
+- 람다로 생성한 `함수형 인터페이스 인스턴스`를 변수에 저장하는 경우에도 SAM 생성자를 사용할 수 있다.
+
+```kotlin
+/* SAM 생성자를 사용해 listener 인스턴스 재사용하기 */
+val listener = OnClickListener { view -> 
+    val text = when (view.id) {
+        R.id.button1 -> "First Button"
+        R.id.button2 -> "Second Button"
+        else -> "Unknown button"
+    }
+    toast(text)  /* <-- "text"의 값을 사용자에게 출력 */
+}
+
+button1.setOnClickListener(listener)
+button2.setOnClickListener(listener)
+```
+
+## 5.5 수신 객체 지정 람다: with와 apply
+
+### 5.5.1 with 함수
+
+- `with` 라는 라이브러리 함수를 사용하면 어떤 객체의 이름을 반복하지 않고 연산을 수행 할 수 있다.
+
+```kotlin
+/* with 없이 알파벳 만들기 */
+fun alphabet() : String {
+    val result = StringBuilder()
+    for (letter in 'A'..'Z') {
+        result.append(letter)
+    }
+    
+    result.append("\nNow I know the alphabet!")
+    return result.toString()
+}
+
+>>> println(alphabet())
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+Now I know the alphabet!
+```
+
+- 위 예제를 `with`로 다시 작성하면 아래와 같다.
+
+```kotlin
+/* with를 사용해 알파벳 만들기 */
+fun alphabet() : String {
+    val result = StringBuilder()
+    return with(result) {
+        for (letter in 'A'..'Z') {
+            this.append(letter)
+        }
+        
+        this.append("\nNow I know the alphabet!")
+        this.toString()
+    }
+}
+```
+
+- 위 예제를 result 변수를 없애어 한 번 더 리팩토링 할 수 있다.
+
+```kotlin
+/* with와 식을 본문으로 하는 함수를 활용해 알파벳 만들기 */
+fun alphabet() = with(StringBuilder()) {
+    for (letter in 'A'..'Z') {
+        append(letter)
+    }
+    
+    append("\nNow I know the alphabet!")
+    toString()
+}
+```
+
+### 5.5.2 apply 함수
+
+- `apply` 함수는 거의 with와 같다. 유일한 차이점은 apply는 항상 자신에게 전달된 객체를 반환한다는 점이다.
+
+```kotlin
+/* apply를 사용해 알파벳 만들기 */
+fun alphabet() = StringBuilder().apply {
+    for (letter in 'A'..'Z') {
+        append(letter)
+    }
+    append("\nNow I know the alphabet!")
+}.toString()
+```
+
+- apply 함수는 객체의 인스턴스를 만듬과 동시에 프로퍼티 중 일부를 초기화 하는 경우 유용하다. 자바에서는 별도의 Builder 객체가 이런 영할을 담당한다.
+- apply를 객체의 초기화에 활용하는 예는 아래와 같다.
+
+```kotlin
+/* apply를 TextView 초기화에 사용하기 */
+fun createViewWithCustomAttributtes(context: Context) =
+    TextView(context).apply {
+        text = "Sample Text"
+        textSize = 2.0
+        setPadding(10, 0, 0, 0)
+    }
+```
+
+- 표준 라이브러리의 `buildString` 함수를 사용하면 alphabet 함수를 더 단순화 할 수 있다.
+
+```kotlin
+/* buildString으로 알파벳 만들기 */
+fun alphabet() = buildString {
+    for (letter in 'A'..'Z') {
+        append(letter)
+    }
+    append("\nNow I know the alphabet!")
+}
+```
