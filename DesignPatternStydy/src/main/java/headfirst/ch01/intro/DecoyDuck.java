@@ -1,9 +1,9 @@
 package headfirst.ch01.intro;
 
-public class RubberDuck extends Duck {
+public class DecoyDuck extends Duck {
     @Override
     public void quack() {
-        System.out.println("삑삑");
+        // Do Nothing
     }
 
     @Override
@@ -13,6 +13,6 @@ public class RubberDuck extends Duck {
 
     @Override
     public void display() {
-        System.out.println("고무오리");
+        System.out.println("가짜오리");
     }
 }

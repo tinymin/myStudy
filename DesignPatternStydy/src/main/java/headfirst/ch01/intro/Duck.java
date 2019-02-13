@@ -5,13 +5,13 @@ public abstract class Duck {
         System.out.println("Quack");
     }
 
-    public boolean swim() {
-        return true;
+    public void swim() {
+        System.out.println("Can swimming.");
     }
 
-    public boolean fly() {
-        return true;
+    public void fly() {
+        System.out.println("Can fly.");
     }
 
-    public abstract boolean display();
+    public abstract void display();
 }
