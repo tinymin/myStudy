@@ -53,6 +53,14 @@ public class HelloWorld {
 }
 ``` 
 
+### 참고자료
+- class 파일 포멧 구조
+  - https://blog.lse.epita.fr/articles/69-0xcafebabe-java-class-file-format-an-overview.html
+  - https://www.viralpatel.net/tutorial-java-class-file-format-revealed/
+- JVM Opcode
+  - https://jrebel.com/rebellabs/rebel-labs-report-mastering-java-bytecode-at-the-core-of-the-jvm/2/
+  - https://en.wikipedia.org/wiki/Java_bytecode_instruction_listings
+ 
 
 ## 2.3 핫스팟 입문
 - 핫스팟 덕분에 자바는 C/C++ 같은 언어에 필적할 만한 성능이 되었다.
@@ -61,7 +69,6 @@ public class HelloWorld {
 
 ![그림 2-3 핫스팟 JVM](./img/2_3.png)
 
-
 ### 2.3.1 JIT 컴파일이란?
 
 - 핫스팟은 프로그램 단위(메서드와 루프)를 인터프리티드 바이트코드에서 네이티브 코드로 컴파일한다. 바로 *JIT*<sup>just-in-time</sup> 컴파일이라고 알려진 기술이다.
@@ -69,6 +76,11 @@ public class HelloWorld {
 - JIT 컴파일의 장점은 컴파일러가 해석 단계에서 수집한 추적 정보를 근거로 최적화를 한다는 것이다.
 - 자바와 같이 프로필 기반 최적화<sup>profile-guided optimization</sup>(PGO)를 응용하는 환경에서는 *동적 인라이닝*<sup>dynamic inlining</sup> 또는 가상 호출<sup>virtual call</sup> 등으로 성능 개선을 할 수 있다.
 - 자바의 철학은 제로-오버헤드 추상화를 전혀 따르지 않으므로 고성능 자바 애플리케이션을 개발하는 사람들은 '상식적인 추론'만으로 자바 프로그래밍을 해서 안 된다.
+
+### 참고자료
+- https://www.slideshare.net/IonutBalosin/from-bytecode-to-native-code-in-hot-spot-jvm
+
+
 
 ## 2.4 JVM 메모리 관리
 
