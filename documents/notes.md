@@ -1,3 +1,9 @@
+# 정리할 것
+- hashCode & equals
+- HashList에서 Hash는 무엇인가
+- 대용량 트래픽 대응 방법에 대한 고민
+- Redis 특징 정리
+
 # 학습 필요한 것들
 
 - Spring을 기초부터 확실히 공부할 필요가 있음
