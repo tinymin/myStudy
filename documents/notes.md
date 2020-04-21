@@ -1,5 +1,8 @@
 # 정리할 것
 - hashCode & equals
+  - https://anster.tistory.com/160
+  - HashList, HashMap, HashTable 등에 사용할 때는 hashCode를 정의해야한다.
+  - HashList에 item을 put하게 되면 해당 객체의 hashCode를 내부에 저장하여 유일한지 판단하게 되는데, 중간에 값이 변경 된다면 hashCode로 바뀌게 된다. 하지만 이미 List에서는 값이 변경되기 이전의 hashCode를 들고 있기 때문에 hashCode로 equals를 비교하게 되면 엉뚱한 결과가 나온다. 따라서 immutable이 중요하다.
 - HashList에서 Hash는 무엇인가
 - 대용량 트래픽 대응 방법에 대한 고민
 - Redis 특징 정리
