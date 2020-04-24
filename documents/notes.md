@@ -1,6 +1,6 @@
 # 읽어볼 것
-https://d2.naver.com/helloworld/4911107 (람다가 이끌어 갈 모던 Java)
-https://d2.naver.com/helloworld/831311 (Java HashMap은 어떻게 동작하는가?)
+- https://d2.naver.com/helloworld/4911107 (람다가 이끌어 갈 모던 Java)
+- https://d2.naver.com/helloworld/831311 (Java HashMap은 어떻게 동작하는가?)
 
 
 # 정리할 것
