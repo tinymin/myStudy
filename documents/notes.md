@@ -1,3 +1,7 @@
+# 읽어볼만한 것
+https://d2.naver.com/helloworld/4911107 (람다가 이끌어 갈 모던 Java)
+
+
 # 정리할 것
 - hashCode & equals
   - https://anster.tistory.com/160
@@ -7,6 +11,7 @@
 - HashList에서 Hash는 무엇인가
 - 대용량 트래픽 대응 방법에 대한 고민
 - Redis 특징 정리
+
 
 # 학습 필요한 것들
 
