@@ -61,6 +61,6 @@
 |   |  정규식 사용 가능 메뉴 |
 |---|---|
 | 1 | ![](./img/regex/01_find.png) |
-| 2 | ![](./img/regex/02_find_proejct.png) |
+| 2 | ![](./img/regex/02_find_project.png) |
 | 3 | ![](./img/regex/03_replace.png) |
-| 4 | ![](./img/regex/04_replace_proejct.png) |
+| 4 | ![](./img/regex/04_replace_project.png) |
