@@ -54,6 +54,7 @@
 
 이해가 안 되는 부분은 실습을 통해 좀 더 배워보도록 하겠습니다.
 
+
 ## IntelliJ IDEA의 정규식 사용
 
 우선 IntelliJ 에서는 정규식을 사용 가능한 곳을 확인해야 합니다. 크게 4가지를 꼽을 수 있습니다. 아래 스크린 샷을 통해 간단히 확인 하시면 됩니다.
@@ -64,3 +65,7 @@
 | 2 | ![](./img/regex/02_find_project.png) |
 | 3 | ![](./img/regex/03_replace.png) |
 | 4 | ![](./img/regex/04_replace_project.png) |
+
+
+## JUnit 검증용 데이터 만들기
+![](./img/regex/05_junit.gif)
