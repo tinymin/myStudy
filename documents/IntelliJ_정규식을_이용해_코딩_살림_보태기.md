@@ -116,3 +116,126 @@ replace : model.set\u$1$2($3);
 매칭 된 부분을 우리는 Setter 형태로 만들어야 하므로 위에 각 '$숫자'로 맵핑된 값을 가져와 치환될 문자열 _model.set\u$1$2($3);_ 로 값을 치환하게 됩니다. 이 때 _$1_ 항목은 대문자로 변경해야 하므로 _\u$1_을 사용하여 소문자 n이 대문자 N으로 변경됩니다.
 
 ![](./img/regex/07_junit06.png)
+
+
+## DB스키마를 Java 모델로 변환하기
+![](./img/regex/10_table_to_model.gif)
+
+DAO 쪽 코드를 개발 하다보면 신규 테이블에 대해서 Java 모델을 새로 만들어야 하는 경우가 있습니다. 컬럼이 몇개 없는 경우에는 금방 끝나지만 많은 경우에는 일일이 코드를 작성하려면 여간 귀찮은게 아닙니다. 아래와 같은 스키마를 예로 Java 모델로 변경해 보겠습니다.
+
+```SQL
+CREATE TABLE `film` (
+  `film_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT COMMENT '영화ID',
+  `title` varchar(255) NOT NULL COMMENT '영화제목',
+  `description` text DEFAULT NULL COMMENT '설명',
+  `release_year` year(4) DEFAULT NULL COMMENT '출시연도',
+  `language_id` tinyint(3) unsigned NOT NULL COMMENT '언어코드',
+  `original_language_id` tinyint(3) unsigned DEFAULT NULL COMMENT '원언어코드',
+  `rental_duration` tinyint(3) unsigned NOT NULL DEFAULT 3 COMMENT '대여기간',
+  `rental_rate` decimal(4,2) NOT NULL DEFAULT 4.99 COMMENT '대여일',
+  `length` smallint(5) unsigned DEFAULT NULL COMMENT '상영시간',
+  `replacement_cost` decimal(5,2) NOT NULL DEFAULT 19.99 COMMENT '가격',
+  `rating` enum('G','PG','PG-13','R','NC-17') DEFAULT 'G' COMMENT '상영등급',
+  `special_features` set('Trailers','Commentaries','Deleted Scenes','Behind the Scenes') DEFAULT NULL COMMENT '비고',
+  `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '수정일',
+  PRIMARY KEY (`film_id`),
+  KEY `idx_title` (`title`),
+  KEY `idx_fk_language_id` (`language_id`),
+  KEY `idx_fk_original_language_id` (`original_language_id`),
+  CONSTRAINT `fk_film_language` FOREIGN KEY (`language_id`) REFERENCES `language` (`language_id`) ON UPDATE CASCADE,
+  CONSTRAINT `fk_film_language_original` FOREIGN KEY (`original_language_id`) REFERENCES `language` (`language_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8
+```
+
+주어진 스키마에서 1차적으로 필요한 요소를 찾아냅니다. 아래와 같이 변수명으로 쓸 컬럼명과 변수타입에 해당하는 컬럼의 데이터 타입, 그리고 없어도 되긴 하지만, 주석으로 쓸 컬럼 코멘트까지 총 3가지를 뽑습니다.
+![](./img/regex/11_db_schema.png)
+
+
+위를 기준으로 패턴을 만들면 아래와 같습니다.
+```
+`(.+)` (.+)\(.+'(.+)',
+```
+
+위 패턴은 각각 아래와 같이 매칭 됩니다. 또한 ( ) 안에 있는 문자열은 순서대로 $1, $2, $3에 매핑 됩니다.
+![](./img/regex/12_pattern.png)
+
+
+이를 아래와 같이 [ private $2 $1;    // $3 ] 으로 변환하게 되면 스키마를 Java 모델로 변환하게 됩니다.
+![](./img/regex/13_replace.png)
+
+
+1차적으로 변환된 코드는 아래와 같으며, 이렇게 만든 상태에서 몇가지 예외 케이스를 다듬으면 금방 Model 객체를 만들 수 있습니다.
+```Java	
+public class Film {
+    private smallint film_id;    // 영화ID
+    private varchar title;    // 영화제목
+    `description` text DEFAULT NULL COMMENT '설명',
+    private year release_year;    // 출시연도
+    private tinyint language_id;    // 언어코드
+    private tinyint original_language_id;    // 원언어코드
+    private tinyint rental_duration;    // 대여기간
+    private decimal rental_rate;    // 대여일
+    private smallint length;    // 상영시간
+    private decimal replacement_cost;    // 가격
+    private enum rating;    // 상영등급
+    private set special_features;    // 비고
+    private timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp last_update;    // 수정일
+}
+```
+
+## 정규식으로 검색하기
+개발을 하다보면 분명히 초면인 코드를 만나게 됩니다. 이럴 땐 소스 검색을 자주하게 되는데, 이 때도 정규식을 이용하면 원하는 코드를 쉽게 찾을 수 있습니다. IntellJ로 검색은 2가지가 있습니다.
+
+  - 현재 파일 검색 (Ctrl + F)
+  - 프로젝트 전체 검색 (Ctrl + Shift + F)
+  
+몇 가지 예를 통해 검색 케이스를 살펴 보겠습니다.
+
+### 케이스1. _cache_라는 글자를 포함하는 메소드만 검색하기
+
+메소드를 검색하려면 다음과 같은 특징을 패턴으로 나타내면 됩니다.
+  
+  - 메소드는 대부분 private 또는 public 시작한다.
+  - 메소드 헤더의 끝은 대부분 { 로 끝난다.
+
+위 2가지 사항을 기준으로 패턴을 만들면 아래와 같습니다.
+
+```
+(public|private).*cache.*\{ 
+```
+
+### 케이스2. @Autowired 가 적용 된 Service 만 검색하기
+
+ - \n? : 물음표를 붙임으로써 개행문자열이 있을 수도 있고 없을 수도 있음을 의미한다.
+ - .+  : 임의의 문자열 1개 이상이 반복 됨을 의미한다.
+ 
+ ```
+ @Autowired\n?.+Service
+ ```
+ 
+ ### 케이스3. 특정 숫자 이상의 숫자 찾기
+ 
+ 보통 정규식에서 숫자는 [0−9]로 표현을 하지만 IntelliJ 에서는 \d를 사용할 수 있습니다. 이를 이용해서 특정 숫자 이상의 수를 검출 할 수 있습니다.
+예를 들어 50,000 이상의 수를 검출하려면 아래와 같은 조건을 생각해볼 수 있습니다.
+
+    IntelliJ에서 숫자는 \d
+
+    로 표현 가능하다.
+    50,000 이상의 숫자는 5자리이다.
+    자바7부터 숫자에 '_'를 허용하므로 중간에 '_'가 있을 수있다.
+
+이 조건으로 패턴을 만들면 아래와 같습니다.
+
+```
+5\d_?\d\d\d
+```
+
+만약 5만 ~ 10만 사이의 수를 구하려면 아래와 같이 표현이 가능합니다.
+
+```
+[5-9]\d_?\d\d\d
+```
+
+## 마치며
+
+정규식을 꼭 코드 안에 특정 패턴을 검출하는 용도로만 쓰는 것보다 단순 반복 작업을 정규식으로 처리하면 훨씬 효율적으로 개발을 할 수 있게 됩니다. 이 글을 통해 정규식에 흥미를 가질 수 있으시면 좋겠습니다.
